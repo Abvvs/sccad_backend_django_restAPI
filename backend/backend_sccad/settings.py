@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'api',
     'empleados',
+    'trabajos',
 
 ]
 
