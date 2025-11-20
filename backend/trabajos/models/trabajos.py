@@ -1,6 +1,7 @@
 from django.db import models
 from .catalogos import EstadoTrabajo, TipoTrabajo
 from django.contrib.auth.models import User
+from clientes.models import Cliente
 
 
 class Trabajo(models.Model):
@@ -11,19 +12,12 @@ class Trabajo(models.Model):
         ('CANCELADO', 'Trabajo Cancelado (no se culminó)'),
     ]
 
-    PRIORIDAD = [
-        ('BAJA', 'Baja'),
-        ('NORMAL', 'Normal'),
-        ('ALTA', 'Alta'),
-        ('URGENTE', 'Urgente'),
-    ]
 
     numero_trabajo = models.CharField(max_length=50, unique=True)
     tipo_trabajo = models.ForeignKey(TipoTrabajo, on_delete=models.PROTECT, related_name='trabajos')
-    #cliente = models.ForeignKey(Persona, on_delete=models.PROTECT, related_name='trabajos')
+    cliente = models.ManyToManyField(Cliente, through='TrabajoCliente', related_name='trabajos')
     descripcion = models.TextField()
     direccion_campo = models.TextField(blank=True, null=True)
-    referencia_ubicacion = models.TextField(blank=True, null=True)
     monto_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     saldo_pendiente = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     estado_pago = models.CharField(max_length=20, choices=ESTADO_PAGO, default='PENDIENTE')
@@ -34,7 +28,6 @@ class Trabajo(models.Model):
         null=True,
         related_name='trabajos_actuales'
     )
-    prioridad = models.CharField(max_length=20, choices=PRIORIDAD, default='NORMAL')
     observaciones = models.TextField(blank=True, null=True)
     activo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -52,7 +45,7 @@ class Trabajo(models.Model):
 
 class TrabajoEstadoHistorial(models.Model):
     trabajo = models.ForeignKey(Trabajo, on_delete=models.CASCADE, related_name='historial_estados')
-    estado_trabajo = models.ForeignKey(EstadoTrabajo, on_delete=models.PROTECT)
+    estado_trabajo = models.ForeignKey(EstadoTrabajo, on_delete=models.PROTECT, null= True)
     fecha_cambio = models.DateTimeField(auto_now_add=True)
     usuario_responsable = models.CharField(max_length=100, blank=True, null=True)
     departamento_actual = models.CharField(max_length=100, blank=True, null=True)
@@ -69,31 +62,34 @@ class TrabajoEstadoHistorial(models.Model):
     def __str__(self):
         return f"{self.trabajo.numero_trabajo} → {self.estado_trabajo.nombre}"
 
-class TrabajoPersona(models.Model):
+class TrabajoCliente(models.Model):
+    TIPO_ETIQUETA_CLIENTE_CHOICES = [
+        ('PRINCIPAL', 'Principal'),
+        ('PROPIETARIO', 'Propietario'),
+        ('CONTACTO', 'Contacto'),
+    ]
     trabajo = models.ForeignKey(
-        "trabajos.Trabajo",
+        Trabajo,
         on_delete=models.CASCADE,
-        related_name="personas_relacionadas"
+        related_name="clientes_relacionadas"
     )
-    """ persona = models.ForeignKey(
-        "personas.Persona",  # asegúrate de tener la app personas o ajusta el nombre
+    cliente = models.ForeignKey(
+        Cliente,  # asegúrate de tener la app personas o ajusta el nombre
         on_delete=models.CASCADE,
         related_name="trabajos_relacionados"
-    ) """
-    """ tipo_etiqueta = models.ForeignKey(
-        "trabajos.TipoEtiquetaPersona",  # o donde tengas el catálogo de etiquetas
-        on_delete=models.CASCADE
-    ) """
-    #es_contacto_principal = models.BooleanField(default=False)
-    #orden_visualizacion = models.PositiveIntegerField(default=0)
+    )
+    tipo_etiqueta = models.CharField(
+        max_length=20,
+        choices=TIPO_ETIQUETA_CLIENTE_CHOICES,
+    )
     observaciones = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        #unique_together = ('trabajo', 'persona', 'tipo_etiqueta')
+        unique_together = ('trabajo', 'cliente', 'tipo_etiqueta')
         verbose_name = "Relación Trabajo-Persona"
         verbose_name_plural = "Relaciones Trabajo-Persona"
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.trabajo}"
+        return f"{self.trabajo.numero_trabajo} - {self.cliente.nombre} ({self.tipo_etiqueta})"

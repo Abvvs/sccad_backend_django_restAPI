@@ -6,6 +6,6 @@ admin.site.register(TipoServicio)
 admin.site.register(FormaPago)
 admin.site.register(Trabajo)
 admin.site.register(TrabajoEstadoHistorial)
-admin.site.register(TrabajoPersona)
+admin.site.register(TrabajoCliente)
 
 # Register your models here.
