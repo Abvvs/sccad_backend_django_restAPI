@@ -5,9 +5,9 @@ urlpatterns = [
     #principales
     path("", views.TrabajoListCreateView.as_view(), name="lista_trabajo"),
     path("<int:pk>/inactivar/", views.TrabajoDeactivateView.as_view(), name="trabajo_inactivar"),
-    path("<int:pk>/", views.TrabajoRetrieveUpdateView.as_view(), name="tranajo_update"),
+    path("<int:pk>/", views.TrabajoRetrieveUpdateView.as_view(), name="trabajo_update"),
     path("catalogos/tipo-trabajo/", views.TipoTrabajoListView.as_view(), name="tipo_trabajo_list"),
-    path("buscar/", views.buscar_trabajo, name="buscar_trabajo"),
+    path("buscar/", views.consultar_estado_tramite, name="buscar_trabajo"),
 
     #historial
     path('<int:trabajo_id>/historial/', views.TrabajoHistorialListView.as_view(), name='trabajo_historial_list'),

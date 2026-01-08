@@ -61,6 +61,10 @@ INSTALLED_APPS = [
     'empleados',
     'trabajos',
     'clientes',
+    'servicio_adicional',
+    'cuenta_cobrar',
+    'pago',
+    'movimiento_caja'
 ]
 
 MIDDLEWARE = [

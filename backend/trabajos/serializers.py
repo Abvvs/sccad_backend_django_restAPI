@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import Trabajo, TrabajoCliente, EstadoTrabajo, TipoTrabajo, TrabajoEstadoHistorial
+from django.utils import timezone
+import datetime
 
 class EstadoTrabajoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -41,6 +43,7 @@ class TrabajoSerializer(serializers.ModelSerializer):
     estado_pago_display = serializers.CharField(source='get_estado_pago_display', read_only=True)
     tipo_trabajo = TipoTrabajoSerializer(read_only=True)
     estado_actual = EstadoTrabajoSerializer(source="estado_trabajo_actual", read_only=True)
+    historial = TrabajoEstadoHistorialSerializer(source='historial_estados', many=True, read_only=True)
 
     tipo_trabajo_id = serializers.PrimaryKeyRelatedField(
         queryset=TipoTrabajo.objects.all(),
@@ -57,22 +60,29 @@ class TrabajoSerializer(serializers.ModelSerializer):
             'descripcion', 'direccion_campo',
             'monto_total', 'saldo_pendiente', 'estado_pago', 'estado_pago_display',
             'estado_trabajo_actual', 'estado_trabajo_nombre', 
-            'estado_actual','observaciones', 'activo', 'created_at', 'updated_at',
-            'clientes_relacionados'
+            'estado_actual','observaciones', 'estado', 'created_at', 'updated_at',
+            'clientes_relacionados', 'historial',
         ]
 
         read_only_fields = ['numero_trabajo', 'created_at', 'updated_at']
     def create(self, validated_data):
     # Generar número de trabajo automáticamente
-        ultimo_trabajo = Trabajo.objects.order_by('-id').first()
-        if ultimo_trabajo and ultimo_trabajo.numero_trabajo:
+        anio_actual = timezone.now().year
+        prefijo = f"SCCAD-{anio_actual}"
+        ultimo_trabajo_anio = Trabajo.objects.filter(
+            numero_trabajo__startswith=prefijo
+        ).order_by('-id').first()
+        if ultimo_trabajo_anio and ultimo_trabajo_anio.numero_trabajo:
             try:
-                ultimo_numero = int(ultimo_trabajo.numero_trabajo.split('-')[-1])
-                nuevo_numero = f"SCCAD-2025-{str(ultimo_numero + 1).zfill(3)}"
-            except:
-                nuevo_numero = "SCCAD-2025-001"
+                ultimo_numero_str = ultimo_trabajo_anio.numero_trabajo.split('-')[-1]
+                nuevo_numero_int = int(ultimo_numero_str) + 1
+                nuevo_numero = f"{prefijo}-{str(nuevo_numero_int).zfill(3)}"
+            except(ValueError, IndexError):
+                # Por si acaso el formato falla, empezamos en 001
+                nuevo_numero = f"{prefijo}-001"
         else:
-            nuevo_numero = "SCCAD-2025-001"
+            # Si es el primer trabajo del año
+            nuevo_numero = f"{prefijo}-001"
         
         validated_data['numero_trabajo'] = nuevo_numero
         return super().create(validated_data)

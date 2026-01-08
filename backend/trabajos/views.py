@@ -14,25 +14,32 @@ from .serializers import (
     TrabajoClienteSerializer
 )
 
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
-def buscar_trabajo(request):
+def consultar_estado_tramite(request):
     query = request.GET.get("q", "").strip()
 
     if not query:
-        return Response({"error": "Debe proporcionar un número de trabajo o nombre de propietario."}, status=400)
+        return Response({"error": "Proporcione un número de trabajo."}, status=400)
 
-    trabajos = Trabajo.objects.filter(
-        Q(numero_trabajo__icontains=query)
-    ).distinct()
-    if not trabajos.exists():
-        return Response({"message": "No se encontraron trabajos con ese criterio."}, status=404)
+    trabajo = Trabajo.objects.filter(
+        numero_trabajo__iexact=query,
+        tipo_trabajo__requiere_tramite=True
+    ).prefetch_related(
+        'historial_estados__estado_trabajo', 
+        'clientes_relacionadas__cliente'
+    ).first()
+    if not trabajo:
+        return Response({
+            "message": "No se encontró el trámite o no está disponible para consulta pública."
+        }, status=404)
     
-    serializer = TrabajoSerializer(trabajos, many=True)
+    serializer = TrabajoSerializer(trabajo)
     return Response(serializer.data)
 
 class TrabajoListCreateView(generics.ListCreateAPIView):
-    queryset = Trabajo.objects.filter(activo=True).select_related("tipo_trabajo", "estado_trabajo_actual")
+    queryset = Trabajo.objects.filter(estado=True).select_related("tipo_trabajo", "estado_trabajo_actual")
     serializer_class = TrabajoSerializer
     permission_classes = [IsAuthenticated]
     def get_queryset(self):
@@ -53,7 +60,7 @@ class TrabajoDeactivateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_update(self, serializer):
-        serializer.save(activo=False)
+        serializer.save(estado=False)
 
 class TipoTrabajoListView(generics.ListAPIView):
     queryset = TipoTrabajo.objects.all()
@@ -135,7 +142,7 @@ class TrabajoClienteDeleteView(generics.DestroyAPIView):
 @permission_classes([AllowAny])
 def trabajos_choices(request):
     """GET /api/trabajos/choices/ - Opciones para formularios"""
-    tipos_trabajo = TipoTrabajo.objects.filter(activo=True)
+    tipos_trabajo = TipoTrabajo.objects.filter(estado=True)
     estados_trabajo = EstadoTrabajo.objects.all()
     
     return Response({

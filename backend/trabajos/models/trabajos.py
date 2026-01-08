@@ -18,9 +18,8 @@ class Trabajo(models.Model):
     cliente = models.ManyToManyField(Cliente, through='TrabajoCliente', related_name='trabajos')
     descripcion = models.TextField()
     direccion_campo = models.TextField(blank=True, null=True)
-    monto_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    saldo_pendiente = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    estado_pago = models.CharField(max_length=20, choices=ESTADO_PAGO, default='PENDIENTE')
+    monto_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    #estado_pago = models.CharField(max_length=20, choices=ESTADO_PAGO, default='PENDIENTE')
     estado_trabajo_actual = models.ForeignKey(
         EstadoTrabajo,
         on_delete=models.SET_NULL,
@@ -29,7 +28,7 @@ class Trabajo(models.Model):
         related_name='trabajos_actuales'
     )
     observaciones = models.TextField(blank=True, null=True)
-    activo = models.BooleanField(default=True)
+    estado = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
@@ -38,6 +37,12 @@ class Trabajo(models.Model):
         verbose_name = "Trabajo"
         verbose_name_plural = "Trabajos"
         ordering = ['-created_at']
+    @property
+    def cuenta(self):
+        return self.cuentas.first()
+    @property
+    def saldo_pendiente(self):
+        return self.cuenta.saldo_pendiente if self.cuenta else self.monto_total
 
     def __str__(self):
         return f"{self.numero_trabajo} - {self.descripcion[:40]}"
@@ -50,7 +55,6 @@ class TrabajoEstadoHistorial(models.Model):
     usuario_responsable = models.CharField(max_length=100, blank=True, null=True)
     departamento_actual = models.CharField(max_length=100, blank=True, null=True)
     observaciones = models.TextField(blank=True, null=True)
-    documentos_requeridos = models.TextField(blank=True, null=True)
     fecha_estimada_siguiente_paso = models.DateField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

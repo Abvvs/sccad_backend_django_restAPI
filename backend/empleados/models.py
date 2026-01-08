@@ -41,7 +41,7 @@ class Empleado(models.Model):
         help_text='Nombre del banco'
     )
     estado = models.BooleanField(default=True) # activo_inactivo
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     def __str__(self):
         return self.nombre
