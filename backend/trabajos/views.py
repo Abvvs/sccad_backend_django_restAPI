@@ -5,12 +5,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import Trabajo, TipoTrabajo, TrabajoEstadoHistorial, EstadoTrabajo, TrabajoCliente
+from .models import Trabajo, TipoTrabajo, TrabajoEstadoHistorial, EstadoTrabajo, TrabajoCliente,FormaPago
 from .serializers import (
     TrabajoSerializer, 
     TipoTrabajoSerializer,
     TrabajoEstadoHistorialSerializer,
-    EstadoTrabajoSerializer,
+    FormaPagoSerializer,
     TrabajoClienteSerializer
 )
 
@@ -149,4 +149,13 @@ def trabajos_choices(request):
         'tipos_trabajo': [[str(t.id), t.nombre] for t in tipos_trabajo],
         'estados_trabajo': [[str(e.id), e.nombre] for e in estados_trabajo],
         'estados_pago': Trabajo.ESTADO_PAGO,
+    })
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def forma_pago(request):
+    """GET /api/trabajos/forma_pago/ - Opciones para formularios"""
+    forma_pago = FormaPago.objects.filter(estado=True)
+    return Response({
+        'forma_pago': [[str(t.id), t.nombre] for t in forma_pago],
     })

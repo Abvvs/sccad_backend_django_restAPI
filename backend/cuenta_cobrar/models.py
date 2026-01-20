@@ -20,26 +20,35 @@ class CuentaCobrar(models.Model):
     ]
     numero_cuenta = models.CharField(max_length=50, unique=True)
     cliente = models.ForeignKey('clientes.Cliente', on_delete=models.PROTECT, related_name="cuentas")
-    trabajo = models.ForeignKey(
-        Trabajo, on_delete=models.PROTECT, null=True, blank=True, related_name="cuentas"
+    trabajo = models.OneToOneField(
+        Trabajo, on_delete=models.PROTECT, null=True, blank=True, related_name="cuenta"
     )
     servicio_adicional = models.ForeignKey(
         ServicioAdicional, on_delete=models.PROTECT, null=True, blank=True, related_name="cuentas"
     )
     monto_total = models.DecimalField(max_digits=10, decimal_places=2)
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="PENDIENTE")
+    #estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="PENDIENTE")
+    tipo_cuenta=models.CharField(max_length=20, choices=TIPO_CUENTA_CHOICES, editable=False)
     observaciones = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     def clean(self):
         """Validar que solo tenga una referencia válida según el tipo."""
-        if self.tipo_cuenta == "TRABAJO":
-            if not self.trabajo or self.servicio_adicional:
-                raise ValidationError("Cuenta tipo TRABAJO debe tener trabajo_id y no servicio_id.")
+        if self.trabajo and self.servicio_adicional:
+            raise ValidationError(
+                "Una cuenta no puede estar asociada a trabajo y servicio al mismo tiempo."
+            )
 
-        if self.tipo_cuenta == "SERVICIO":
-            if not self.servicio_adicional or self.trabajo:
-                raise ValidationError("Cuenta tipo SERVICIO debe tener servicio_id y no trabajo_id.")
+        if not self.trabajo and not self.servicio_adicional:
+            raise ValidationError(
+                "La cuenta debe estar asociada a un trabajo o a un servicio adicional."
+            )
+
+        if self.trabajo:
+            self.tipo_cuenta = "TRABAJO"
+
+        if self.servicio_adicional:
+            self.tipo_cuenta = "SERVICIO"
 
     @property
     def total_pagado(self):

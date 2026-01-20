@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from .models import Trabajo, TrabajoCliente, EstadoTrabajo, TipoTrabajo, TrabajoEstadoHistorial
+from .models import Trabajo, TrabajoCliente, EstadoTrabajo, TipoTrabajo, TrabajoEstadoHistorial, FormaPago
 from django.utils import timezone
-import datetime
+from cuenta_cobrar.serializers import CuentaCobrarSerializer
 
 class EstadoTrabajoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -12,7 +12,10 @@ class TipoTrabajoSerializer(serializers.ModelSerializer):
     class Meta:
         model = TipoTrabajo
         fields = ["id", "nombre", "incluye_campo", "incluye_oficina", "requiere_tramite"]
-
+class FormaPagoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FormaPago
+        fields={"id","nombre","es_efectivo"}
 class TrabajoEstadoHistorialSerializer(serializers.ModelSerializer):
     estado_trabajo_nombre = serializers.CharField(source= 'estado_trabajo.nombre', read_only = True)
 
@@ -21,7 +24,7 @@ class TrabajoEstadoHistorialSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'trabajo', 'estado_trabajo', 'estado_trabajo_nombre',
             'fecha_cambio', 'usuario_responsable', 'departamento_actual',
-            'observaciones', 'documentos_requeridos', 'fecha_estimada_siguiente_paso',
+            'observaciones', 'fecha_estimada_siguiente_paso',
             'created_at'
         ]
         read_only_fields = ['trabajo', 'fecha_cambio', 'created_at']
@@ -40,11 +43,12 @@ class TrabajoClienteSerializer(serializers.ModelSerializer):
 class TrabajoSerializer(serializers.ModelSerializer):
     tipo_trabajo_nombre = serializers.CharField(source='tipo_trabajo.nombre', read_only=True)
     estado_trabajo_nombre = serializers.CharField(source='estado_trabajo_actual.nombre', read_only=True)
-    estado_pago_display = serializers.CharField(source='get_estado_pago_display', read_only=True)
+    cuenta = CuentaCobrarSerializer(read_only=True)
+    estado_pago = serializers.CharField(source="cuenta.estado_pago", read_only=True)
     tipo_trabajo = TipoTrabajoSerializer(read_only=True)
     estado_actual = EstadoTrabajoSerializer(source="estado_trabajo_actual", read_only=True)
     historial = TrabajoEstadoHistorialSerializer(source='historial_estados', many=True, read_only=True)
-
+    saldo_pendiente = serializers.DecimalField(source="cuenta.saldo_pendiente", max_digits=10, decimal_places=2, read_only=True)
     tipo_trabajo_id = serializers.PrimaryKeyRelatedField(
         queryset=TipoTrabajo.objects.all(),
         source="tipo_trabajo",
@@ -58,10 +62,10 @@ class TrabajoSerializer(serializers.ModelSerializer):
             'id', 'numero_trabajo', 'tipo_trabajo', 'tipo_trabajo_id', 
             'tipo_trabajo_nombre',
             'descripcion', 'direccion_campo',
-            'monto_total', 'saldo_pendiente', 'estado_pago', 'estado_pago_display',
+            'monto_total', 'saldo_pendiente', 'estado_pago',
             'estado_trabajo_actual', 'estado_trabajo_nombre', 
             'estado_actual','observaciones', 'estado', 'created_at', 'updated_at',
-            'clientes_relacionados', 'historial',
+            'clientes_relacionados', 'historial', 'cuenta',
         ]
 
         read_only_fields = ['numero_trabajo', 'created_at', 'updated_at']

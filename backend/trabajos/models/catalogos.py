@@ -37,7 +37,6 @@ class FormaPago(models.Model):
         ('OTRO', 'Otro'),
     ]
     nombre = models.CharField(max_length=50, unique=True, choices=FORMAS)
-    requiere_referencia = models.BooleanField(default=False)
     es_efectivo = models.BooleanField(default=False)
     estado = models.BooleanField(default=True)
 

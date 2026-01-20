@@ -19,4 +19,5 @@ urlpatterns = [
     path('<int:trabajo_id>/clientes/<int:pk>/eliminar/', views.TrabajoClienteDeleteView.as_view(), name='trabajo_cliente_eliminar'),
     # Choices y búsqueda
     path('choices/', views.trabajos_choices, name='trabajos_choices'),
+    path('forma_pago/', views.forma_pago, name='forma_pago'),
 ]

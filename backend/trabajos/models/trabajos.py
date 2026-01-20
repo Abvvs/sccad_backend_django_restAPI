@@ -11,15 +11,12 @@ class Trabajo(models.Model):
         ('PAGADO', 'Pagado'),
         ('CANCELADO', 'Trabajo Cancelado (no se culminó)'),
     ]
-
-
     numero_trabajo = models.CharField(max_length=50, unique=True)
     tipo_trabajo = models.ForeignKey(TipoTrabajo, on_delete=models.PROTECT, related_name='trabajos')
     cliente = models.ManyToManyField(Cliente, through='TrabajoCliente', related_name='trabajos')
     descripcion = models.TextField()
     direccion_campo = models.TextField(blank=True, null=True)
     monto_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    #estado_pago = models.CharField(max_length=20, choices=ESTADO_PAGO, default='PENDIENTE')
     estado_trabajo_actual = models.ForeignKey(
         EstadoTrabajo,
         on_delete=models.SET_NULL,
@@ -37,13 +34,14 @@ class Trabajo(models.Model):
         verbose_name = "Trabajo"
         verbose_name_plural = "Trabajos"
         ordering = ['-created_at']
-    @property
-    def cuenta(self):
-        return self.cuentas.first()
-    @property
-    def saldo_pendiente(self):
-        return self.cuenta.saldo_pendiente if self.cuenta else self.monto_total
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
 
+        # sincronizar cuenta por cobrar si existe
+        if hasattr(self, "cuenta") and self.cuenta:
+            if self.cuenta.monto_total != self.monto_total:
+                self.cuenta.monto_total = self.monto_total
+                self.cuenta.save(update_fields=["monto_total"])
     def __str__(self):
         return f"{self.numero_trabajo} - {self.descripcion[:40]}"
 

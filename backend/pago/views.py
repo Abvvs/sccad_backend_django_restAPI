@@ -14,5 +14,5 @@ class PagoDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_destroy(self, instance):
         # Revertir pago antes de eliminar
-        instance.revertir_pago()
+        instance.movimientos_caja.all().delete()
         instance.delete()

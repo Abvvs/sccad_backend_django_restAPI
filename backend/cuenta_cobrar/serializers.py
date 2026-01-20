@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import CuentaCobrar
+from pago.serializers import PagoSerializer
 
 
 class CuentaCobrarSerializer(serializers.ModelSerializer):
@@ -8,24 +9,25 @@ class CuentaCobrarSerializer(serializers.ModelSerializer):
     )
     trabajo_numero = serializers.CharField(source="trabajo.numero_trabajo", read_only=True)
     servicio_numero = serializers.CharField(source="servicio_adicional.numero_servicio", read_only=True)
-
+    pagos = PagoSerializer(many=True, read_only=True)
     class Meta:
         model = CuentaCobrar
         fields = [
             "id",
             "numero_cuenta",
+            "pagos",
             "tipo_cuenta",
             "trabajo",
-            "trabajo_numero",
             "servicio_adicional",
-            "servicio_numero",
             "cliente",
             "monto_total",
             "saldo_pendiente",
-            "estado",
+            "estado_pago",
             "observaciones",
             "created_at",
             "updated_at",
+            "servicio_numero",
+            "trabajo_numero",
         ]
         read_only_fields = ["created_at", "updated_at"]
 
