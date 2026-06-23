@@ -5,13 +5,13 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from .models import Trabajo, TipoTrabajo, TrabajoEstadoHistorial, EstadoTrabajo, TrabajoCliente,FormaPago
+from .models import Trabajo, TipoTrabajo, TrabajoEstadoHistorial, EstadoTrabajo, TrabajoCliente,FormaPago, AsignacionTrabajo
 from .serializers import (
     TrabajoSerializer, 
     TipoTrabajoSerializer,
     TrabajoEstadoHistorialSerializer,
-    FormaPagoSerializer,
-    TrabajoClienteSerializer
+    TrabajoClienteSerializer,
+    AsignacionTrabajoSerializer,
 )
 
 
@@ -159,3 +159,23 @@ def forma_pago(request):
     return Response({
         'forma_pago': [[str(t.id), t.nombre] for t in forma_pago],
     })
+
+class AsignacionTrabajoListCreateView(generics.ListCreateAPIView):
+    serializer_class = AsignacionTrabajoSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = AsignacionTrabajo.objects.select_related(
+        "empleado", "trabajo"
+    )
+class AsignacionTrabajoDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = AsignacionTrabajoSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = AsignacionTrabajo.objects.all()
+
+@api_view(['GET'])
+def get_roles(request):
+    """Devuelve los roles disponibles para asignar a empleados"""
+    roles = [
+        {'id': choice[0], 'label': choice[1]}
+        for choice in AsignacionTrabajo.CHOICES_ROLES
+    ]
+    return Response({'roles': roles})

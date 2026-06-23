@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Trabajo, TrabajoCliente, EstadoTrabajo, TipoTrabajo, TrabajoEstadoHistorial, FormaPago
+from .models import Trabajo, TrabajoCliente, EstadoTrabajo, TipoTrabajo, TrabajoEstadoHistorial, FormaPago, AsignacionTrabajo
 from django.utils import timezone
 from cuenta_cobrar.serializers import CuentaCobrarSerializer
 
@@ -90,3 +90,24 @@ class TrabajoSerializer(serializers.ModelSerializer):
         
         validated_data['numero_trabajo'] = nuevo_numero
         return super().create(validated_data)
+
+class AsignacionTrabajoSerializer(serializers.ModelSerializer):
+    empleado_nombre = serializers.CharField( source="empleado.nombre", read_only=True)
+    trabajo_codigo = serializers.CharField( source="trabajo.numero_trabajo", read_only=True)
+    trabajo_descripcion = serializers.CharField(source="trabajo.descripcion", read_only=True)
+    fecha = serializers.DateField(input_formats=["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S"])
+    trabajo_tipo_trabajo = serializers.CharField( source="trabajo.tipo_trabajo", read_only=True)
+    rol_nombre = serializers.SerializerMethodField()
+    subtotal = serializers.SerializerMethodField()
+    total_a_pagar = serializers.SerializerMethodField()
+    class Meta:
+        model = AsignacionTrabajo
+        fields = "__all__"
+
+    def get_rol_nombre(self, obj):
+        return obj.get_rol_display()
+    def get_subtotal(self, obj):
+        return float(obj.subtotal)
+
+    def get_total_a_pagar(self, obj):
+        return float(obj.total_a_pagar)

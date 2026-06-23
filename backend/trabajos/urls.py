@@ -20,4 +20,9 @@ urlpatterns = [
     # Choices y búsqueda
     path('choices/', views.trabajos_choices, name='trabajos_choices'),
     path('forma_pago/', views.forma_pago, name='forma_pago'),
+
+    #Asignaciones trabajos - empleados
+    path("asignacion_trabajo/", views.AsignacionTrabajoListCreateView.as_view(), name = 'trabajo_empleado_list'),
+    path("asignacion_trabajo/<int:pk>/", views.AsignacionTrabajoDetailView.as_view(), name='trabajo_empleado_detail'),
+    path('roles/', views.get_roles, name='roles_choices'),
 ]
