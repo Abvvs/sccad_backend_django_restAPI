@@ -34,21 +34,47 @@ class CuentaCobrar(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     def clean(self):
         """Validar que solo tenga una referencia válida según el tipo."""
-        if self.trabajo and self.servicio_adicional:
+        if self.trabajo_id and self.servicio_adicional_id:
             raise ValidationError(
                 "Una cuenta no puede estar asociada a trabajo y servicio al mismo tiempo."
             )
 
-        if not self.trabajo and not self.servicio_adicional:
+        if not self.trabajo_id and not self.servicio_adicional_id:
             raise ValidationError(
                 "La cuenta debe estar asociada a un trabajo o a un servicio adicional."
             )
 
-        if self.trabajo:
-            self.tipo_cuenta = "TRABAJO"
+    def _generar_numero_cuenta(self):
+        from datetime import datetime
 
-        if self.servicio_adicional:
+        year = datetime.now().year
+        prefijo = f"CT-{year}"
+        ultima = (
+            CuentaCobrar.objects.filter(numero_cuenta__startswith=prefijo)
+            .order_by("-id")
+            .first()
+        )
+        siguiente = 1
+        if ultima:
+            try:
+                siguiente = int(ultima.numero_cuenta.split("-")[-1]) + 1
+            except (ValueError, IndexError):
+                siguiente = 1
+        return f"{prefijo}-{siguiente:04d}"
+
+    def save(self, *args, **kwargs):
+        # tipo_cuenta se derivaba en clean(), que DRF nunca llama: quedaba vacío.
+        if self.trabajo_id:
+            self.tipo_cuenta = "TRABAJO"
+        elif self.servicio_adicional_id:
             self.tipo_cuenta = "SERVICIO"
+
+        # El número vivía solo en el serializer: las cuentas creadas por ORM
+        # quedaban con numero_cuenta='' y chocaban con el unique entre ellas.
+        if not self.numero_cuenta:
+            self.numero_cuenta = self._generar_numero_cuenta()
+
+        super().save(*args, **kwargs)
 
     @property
     def total_pagado(self):

@@ -39,7 +39,15 @@ def consultar_estado_tramite(request):
     return Response(serializer.data)
 
 class TrabajoListCreateView(generics.ListCreateAPIView):
-    queryset = Trabajo.objects.filter(estado=True).select_related("tipo_trabajo", "estado_trabajo_actual")
+    queryset = (
+        Trabajo.objects.filter(estado=True)
+        .select_related("tipo_trabajo", "estado_trabajo_actual")
+        .prefetch_related(
+            "historial_estados__estado_trabajo",
+            "clientes_relacionadas__cliente",
+            "cuenta__pagos__forma_pago",
+        )
+    )
     serializer_class = TrabajoSerializer
     permission_classes = [IsAuthenticated]
     def get_queryset(self):
@@ -47,7 +55,7 @@ class TrabajoListCreateView(generics.ListCreateAPIView):
     
 
     def perform_create(self, serializer):
-        serializer.save(created_at=self.request.user)
+        serializer.save(creado_por=self.request.user)
 
 class TrabajoRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     queryset = Trabajo.objects.all()
@@ -60,7 +68,8 @@ class TrabajoDeactivateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_update(self, serializer):
-        serializer.save(estado=False)
+        # Permite reactivar: si no se envía 'estado', se inactiva por defecto.
+        serializer.save(estado=serializer.validated_data.get('estado', False))
 
 class TipoTrabajoListView(generics.ListAPIView):
     queryset = TipoTrabajo.objects.all()
@@ -110,7 +119,7 @@ class TrabajoClientesView(APIView):
                 'nombre': rel.cliente.nombre,
                 'identificacion': rel.cliente.identificacion,
                 'telefono': rel.cliente.telefono,
-                'tipo_etiqueta': rel.tipo_etiqueta_cliente,
+                'tipo_etiqueta': rel.tipo_etiqueta,
                 'observaciones': rel.observaciones
             } for rel in relaciones]
             
@@ -139,7 +148,7 @@ class TrabajoClienteDeleteView(generics.DestroyAPIView):
         return TrabajoCliente.objects.filter(trabajo_id=trabajo_id)
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def trabajos_choices(request):
     """GET /api/trabajos/choices/ - Opciones para formularios"""
     tipos_trabajo = TipoTrabajo.objects.filter(estado=True)

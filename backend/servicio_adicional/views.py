@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.db import transaction
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -21,15 +22,21 @@ class ServicioAdicionalListCreateView(generics.ListCreateAPIView):
     ordering_fields = ['fecha_servicio', 'created_at']
     ordering = ['-fecha_servicio']
 
+    @transaction.atomic
     def perform_create(self, serializer):
         servicio = serializer.save()
-        # crear cuenta por cobrar automáticamente
+
+        # Sin cliente no hay a quién cobrarle (CuentaCobrar.cliente es obligatorio):
+        # el servicio queda como venta de mostrador, sin cuenta por cobrar.
+        if servicio.cliente_id is None:
+            return
+
+        # tipo_cuenta lo deriva CuentaCobrar.save(); saldo_pendiente es una
+        # propiedad calculada, no un campo, y pasarla reventaba la creación.
         CuentaCobrar.objects.create(
-            tipo_cuenta="SERVICIO",
             servicio_adicional=servicio,
             cliente=servicio.cliente,
             monto_total=servicio.monto_total,
-            saldo_pendiente=servicio.monto_total,
         )
 
 class ServicioAdicionalDetailView(generics.RetrieveUpdateDestroyAPIView):

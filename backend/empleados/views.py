@@ -16,7 +16,8 @@ class EmpleadoDeactivateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_update(self, serializer):
-        serializer.save(estado=False)
+        # Permite reactivar: si no se envía 'estado', se inactiva por defecto.
+        serializer.save(estado=serializer.validated_data.get('estado', False))
 
 class EmpleadoRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     queryset = Empleado.objects.all()

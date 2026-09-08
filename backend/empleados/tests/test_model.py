@@ -54,6 +54,6 @@ class testEmpleadoModel(TestCase):
             empleado.full_clean()
 
     def test_timestamps(self):
-        """Debe guardarse fecha_creacion y fecha_actualizacion."""
-        self.assertIsNotNone(self.empleado.fecha_creacion)
-        self.assertIsNotNone(self.empleado.fecha_actualizacion)
+        """Debe guardarse created_at y updated_at."""
+        self.assertIsNotNone(self.empleado.created_at)
+        self.assertIsNotNone(self.empleado.updated_at)

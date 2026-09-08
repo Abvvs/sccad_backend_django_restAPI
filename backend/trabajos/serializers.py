@@ -15,7 +15,7 @@ class TipoTrabajoSerializer(serializers.ModelSerializer):
 class FormaPagoSerializer(serializers.ModelSerializer):
     class Meta:
         model = FormaPago
-        fields={"id","nombre","es_efectivo"}
+        fields = ["id", "nombre", "es_efectivo"]
 class TrabajoEstadoHistorialSerializer(serializers.ModelSerializer):
     estado_trabajo_nombre = serializers.CharField(source= 'estado_trabajo.nombre', read_only = True)
 
